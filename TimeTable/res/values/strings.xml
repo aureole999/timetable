@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">電車時刻表</string>
+    <string name="action_newTimer">新規</string>
+    <string name="action_settings">設定</string>
+    <string name="title_activity_new_timer">駅検索</string>
+    <string name="stationName">駅名</string>
+    <string name="searchStationButton">検索</string>
+    <string name="inputStationName">駅名を入力してください</string>
+    <string name="title_activity_station_detail">StationDetailActivity</string>
+    <string name="network_return_error">通信エラー\nしばらく待ってから再試行してください</string>
+
+</resources>
