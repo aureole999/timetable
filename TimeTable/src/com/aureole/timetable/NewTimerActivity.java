@@ -15,6 +15,7 @@ import org.jsoup.select.Elements;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -52,9 +53,7 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.new_timer, menu);
         MenuItem searchViewItem = menu.findItem(R.id.searchStationBar);
-        SearchView searchView = (SearchView) searchViewItem.getActionView();
-        searchView.setIconifiedByDefault(false);
-        searchView.setQueryHint(getString(R.string.inputStationName));
+        SearchView searchView = (SearchView) ((View) searchViewItem.getActionView()).findViewById(R.id.searchStation);
         searchView.setOnQueryTextListener(this);
         searchView.requestFocus();
         return true;
@@ -77,35 +76,40 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
         aq.ajax("http://transit.loco.yahoo.co.jp/station/time/search?q=" + query, String.class, new AjaxCallback<String>(){
             @Override
             public void callback(String url, String html, AjaxStatus status) {
-                Document stationSelect = Jsoup.parse(html);
-                // ºò²¹³µÕ¾ËÑË÷
-                Elements stations = stationSelect.select("#station-plu-select ul li a");
-                adapter.clear();
-                stationIdList.clear();
-                
-                if (stations != null) {
-                    Pattern pattern = Pattern.compile("^\\/station\\/rail\\/(\\d+)\\/.*");
-                    for (Element s : stations) {
-                        Matcher matcher = pattern.matcher(s.attr("href"));
-                        if (matcher.find()) {
-                            stationIdList.add(matcher.group(1));
-                            adapter.add(s.text());
-                        }
-                    }
-                    adapter.notifyDataSetChanged();
-                }
-                setProgressBarIndeterminateVisibility(Boolean.FALSE);
+            	if (status.getCode() == 200) {
+	                Document stationSelect = Jsoup.parse(html);
+	                // search for station
+	                Elements stations = stationSelect.select("#station-plu-select ul li a");
+	                adapter.clear();
+	                stationIdList.clear();
+	                
+	                if (stations != null) {
+	                    Pattern pattern = Pattern.compile("^\\/station\\/rail\\/(\\d+)\\/.*");
+	                    for (Element s : stations) {
+	                        Matcher matcher = pattern.matcher(s.attr("href"));
+	                        if (matcher.find()) {
+	                            stationIdList.add(matcher.group(1));
+	                            adapter.add(s.text());
+	                        }
+	                    }
+	                    adapter.notifyDataSetChanged();
+	                }
+            	} else {
+            		// network error
+            		Log.i("network", "status:" + status.getCode() + " " + status.getError() + " url:" + url);
+            	}
+            	setProgressBarIndeterminateVisibility(Boolean.FALSE);
             }
         });
         return false;
     }
 
     @Override
-    public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-        Toast.makeText(this, stationIdList.get(arg2), Toast.LENGTH_LONG).show();
+    public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+        Toast.makeText(this, stationIdList.get(index), Toast.LENGTH_LONG).show();
         Intent intent = new Intent(this, StationDetailActivity.class);
-        intent.putExtra("StationId", stationIdList.get(arg2));
-        intent.putExtra("StationName", ((TextView)arg1).getText());
+        intent.putExtra("StationId", stationIdList.get(index));
+        intent.putExtra("StationName", ((TextView)view).getText());
         startActivity(intent);
         
     }
