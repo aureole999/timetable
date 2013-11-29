@@ -9,6 +9,11 @@
     android:paddingRight="@dimen/list_horizontal_margin"
     android:background="@drawable/big_card"
     >
+    
+    <CheckBox android:id="@+id/line_id_chk"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onChkboxClicked"/>
 
     <TextView android:id="@+id/line_name"
         android:layout_width="wrap_content"

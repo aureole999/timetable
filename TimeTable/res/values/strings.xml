@@ -10,5 +10,6 @@
     <string name="inputStationName">駅名を入力</string>
     <string name="title_activity_station_detail">StationDetailActivity</string>
     <string name="network_return_error">通信エラー\nしばらく待ってから再試行してください</string>
+    <string name="trainForFilter">行き</string>
 
 </resources>
