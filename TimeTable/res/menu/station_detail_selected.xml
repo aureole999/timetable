@@ -1,0 +1,7 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/confirm"
+          android:title="@string/confirm"
+          android:icon="@drawable/ic_1_navigation_accept"
+          android:showAsAction="always"
+    />
+</menu>

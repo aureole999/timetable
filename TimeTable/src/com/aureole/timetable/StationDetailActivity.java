@@ -96,6 +96,15 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (aq.id(R.id.linesListView).getListView().getCheckedItemCount() > 0) {
+            getMenuInflater().inflate(R.menu.station_detail_selected, menu);
+        } else {
+            getMenuInflater().inflate(R.menu.station_detail, menu);
+        }
+        return true;
+    }
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.station_detail, menu);
@@ -131,7 +140,8 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
             return;
         }
 
-        if (aq.id(R.id.linesListView).getListView().getCheckedItemPositions().get(index)) {
+        boolean showFilterFlag = false;
+        if (aq.id(R.id.linesListView).getListView().getCheckedItemPositions().get(index) && showFilterFlag) {
             selectedIndex = index;
             setProgressBarIndeterminateVisibility(Boolean.TRUE);
             String url = (String) stationDetailList.get(selectedIndex).get("line_href");
@@ -164,6 +174,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                         public void onClick(DialogInterface dialog, int which) {
                             //aq.id(R.id.linesListView).getListView().setItemChecked(selectedIndex, true);
                             selectedIndex = -1;
+                            invalidateOptionsMenu();
                         }
                     });
                     builder.setNegativeButton("cancel", new OnClickListener() {
@@ -181,6 +192,8 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                 }
             });
         
+        } else {
+            invalidateOptionsMenu();
         }
 
     }
