@@ -12,5 +12,8 @@
     <string name="network_return_error">通信エラー\nしばらく待ってから再試行してください</string>
     <string name="trainForFilter">行き</string>
     <string name="confirm">完了</string>
+    <string name="network_busy">しばらくお待ちください</string>
+    <string name="progress_dialog_title">データ取得</string>
+    <string name="progress_dialog_message">%1$s駅のスケジュール取得中</string>
 
 </resources>

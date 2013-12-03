@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -16,6 +18,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -36,6 +39,8 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     private SimpleAdapter adapter;
     private List<Map<String, Object>> stationDetailList;
     private int selectedIndex = -1;
+    private String stationId;
+    private DBHelper db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +48,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_station_detail);
         Bundle stationInfo = getIntent().getExtras();
-        String stationId = (String) stationInfo.get("StationId");
+        stationId = (String) stationInfo.get("StationId");
         String stationName = (String) stationInfo.get("StationName");
         setTitle(stationName);
         // Show the Up button in the action bar.
@@ -51,14 +56,13 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
         stationDetailList = new ArrayList<Map<String, Object>>();
         adapter = new SimpleAdapter(this, stationDetailList, android.R.layout.simple_list_item_multiple_choice, new String[] { "line_name_direction" }, new int[] { android.R.id.text1 });
         aq.id(R.id.linesListView).adapter(adapter).itemClicked(this).getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
+        db = new DBHelper(getApplicationContext());
         getLinesByStation(stationId);
 
     }
 
     private void getLinesByStation(String stationId) {
         setProgressBarIndeterminateVisibility(Boolean.TRUE);
-
         aq.ajax("http://transit.loco.yahoo.co.jp/station/rail/" + stationId + "/", String.class, new AjaxCallback<String>() {
             @Override
             public void callback(String url, String html, AjaxStatus status) {
@@ -114,16 +118,29 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case android.R.id.home:
-            // This ID represents the Home or Up button. In the case of this
-            // activity, the Up button is shown. Use NavUtils to allow users
-            // to navigate up one level in the application structure. For
-            // more details, see the Navigation pattern on Android Design:
-            //
-            // http://developer.android.com/design/patterns/navigation.html#up-vs-back
-            //
-            NavUtils.navigateUpFromSameTask(this);
-            return true;
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                return true;
+            case R.id.confirm:
+                // get schedule from checked station-lines
+                SparseBooleanArray itemPositions = aq.id(R.id.linesListView).getListView().getCheckedItemPositions();
+                List<String> lineIdList = new ArrayList<String>();
+                for (int i = 0; i < stationDetailList.size(); i++) {
+                    if (itemPositions.get(i)) {
+                        Pattern pattern = Pattern.compile("gid=(\\d+)");
+                        Matcher matcher = pattern.matcher((String) stationDetailList.get(i).get("line_href"));
+                        if (matcher.find()) {
+                            lineIdList.add(matcher.group(1));
+                        } else {
+                            // unexpected error
+                        }
+                    }
+                }
+                if (lineIdList.size() > 0) {
+                    new GetScheduleTask(this, stationId, null, db).execute(lineIdList.toArray(new String[lineIdList.size()]));
+                } else {
+                    // unexpected error
+                }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -136,11 +153,13 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
         if (selectedIndex != -1) {
-            Toast.makeText(this, "しばらくお待ちください", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.network_busy), Toast.LENGTH_SHORT).show();
             return;
         }
 
         boolean showFilterFlag = false;
+
+        // show destination and train class (Fast, Express, etc) filter
         if (aq.id(R.id.linesListView).getListView().getCheckedItemPositions().get(index) && showFilterFlag) {
             selectedIndex = index;
             setProgressBarIndeterminateVisibility(Boolean.TRUE);
@@ -172,7 +191,6 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                         
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            //aq.id(R.id.linesListView).getListView().setItemChecked(selectedIndex, true);
                             selectedIndex = -1;
                             invalidateOptionsMenu();
                         }
@@ -182,7 +200,6 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             aq.id(R.id.linesListView).getListView().setItemChecked(selectedIndex, false);
-                            // TODO Auto-generated method stub
                             selectedIndex = -1;
                         }
                     });
@@ -193,6 +210,8 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
             });
         
         } else {
+            
+            // refresh menu bar
             invalidateOptionsMenu();
         }
 

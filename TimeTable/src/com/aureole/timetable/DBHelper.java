@@ -13,7 +13,7 @@ public class DBHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE STATION ( " +
-        		"ID INTEGER PRIMARY KEY AUTOINCREMENT" +
+        		"_id INTEGER PRIMARY KEY AUTOINCREMENT" +
         		", YAHOO_ID TEXT" +
         		", NAME TEXT" +
         		", STATION_NAME TEXT" +
@@ -22,7 +22,7 @@ public class DBHelper extends SQLiteOpenHelper {
         		", COLOR INTEGER" +
         		" ) ");
         db.execSQL("CREATE TABLE LINE ( " +
-                "ID INTEGER PRIMARY KEY AUTOINCREMENT" +
+                "_id INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", STATION_ID INTEGER" +
                 ", YAHOO_ID TEXT" +
                 ", NAME TEXT" +
@@ -30,13 +30,13 @@ public class DBHelper extends SQLiteOpenHelper {
                 ", FILTER INTEGER" +
                 " ) ");
         db.execSQL("CREATE TABLE STATIONTIME ( " +
-                "ID INTEGER PRIMARY KEY AUTOINCREMENT" +
+                "_id INTEGER PRIMARY KEY AUTOINCREMENT" +
                 ", STATION_ID INTEGER" +
                 ", LINE_ID INTEGER" +
-                ", DAYTYPE INTEGER" +
-                ", DEPARTTIME TEXT" +
-                ", TRAINTYPE TEXT" +
-                ", TRAINFOR TEXT" +
+                ", DAY_TYPE INTEGER" +
+                ", DEPART_TIME TEXT" +
+                ", TRAIN_CLASS TEXT" +
+                ", STATION_FOR TEXT" +
                 ", SPECIAL TEXT" +
                 " ) ");
     }

@@ -25,7 +25,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         setContentView(R.layout.activity_main);
         db = new DBHelper(getApplicationContext());
         
-        //Cursor cursor = db.rawQuery("select * from STATION", new String[] {});
         adapter = new SimpleCursorAdapter(this, android.R.layout.simple_list_item_1, null, new String[]{"NAME"}, new int[]{android.R.id.text1}, 0);
         aq.id(R.id.myStationListView).adapter(adapter);
         getLoaderManager().initLoader(0, null, this);
@@ -57,15 +56,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
 
     @Override
     public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) {
-        /*
-         * Takes action based on the ID of the Loader that's being created
-         */
         switch (loaderId) {
         case 0:
-            // Returns a new CursorLoader
-            return new SQLiteCursorLoader(this, db, "SELECT id _id, * FROM STATION", new String[]{});
+            return new SQLiteCursorLoader(this, db, "SELECT * FROM STATION", new String[]{});
         default:
-            // An invalid id was passed in
             return null;
         }
     }
@@ -74,13 +68,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
     @Override
     public void onLoadFinished(Loader<Cursor> arg0, Cursor cursor) {
         adapter.changeCursor(cursor);
-        
     }
 
 
     @Override
     public void onLoaderReset(Loader<Cursor> arg0) {
-        // TODO Auto-generated method stub
-        
     }
 }
