@@ -1,6 +1,10 @@
 package com.aureole.timetable;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jsoup.Jsoup;
+import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -69,7 +73,7 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
             db.delete("LINE", "STATION_ID = ? ", new String[]{id.toString()});
             db.delete("STATIONTIME", "STATION_ID = ? ", new String[]{id.toString()});
             
-            String url = "http://transit.loco.yahoo.co.jp/station/time/" + stationId + "/?gid=";
+            String url = "http://transit.loco.yahoo.co.jp/station/time/%s/?gid=%s&kind=%s";
             String[] kind = new String[] { "1", "2", "4" };
             int count = kind.length * params.length;
             for (int i = 0; i < params.length; i++) {
@@ -82,10 +86,23 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                 
                 for (int j = 0; j < kind.length; j++) {
                     AjaxCallback<String> cb = new AjaxCallback<String>();
-                    cb.url(url + params[i] + "&kind=" + kind[j]).type(String.class);
+                    cb.url(String.format(url, stationId, params[i], kind[j])).type(String.class);
                     aq.sync(cb);
                     String html = cb.getResult();
                     Document document = Jsoup.parse(html);
+                    
+                    // get train class and station for
+                    Elements trainType = document.select("#timeNotice1");
+                    Elements trainFor = document.select("#timeNotice2");
+                    Map<String, String> trainClassMap = new HashMap<String, String>(); 
+                    Map<String, String> stationForMap = new HashMap<String, String>(); 
+                    for (Element e : trainType.select("dd > dl")) {
+                        trainClassMap.put(e.select("dt").text().replace("：", ""), e.select("dd").text());
+                    }
+                    for (Element e : trainFor.select("dd > dl")) {
+                        stationForMap.put(e.select("dt").text().replace("：", ""), e.select("dd").text());
+                    }
+                    
                     Elements tr_hours = document.select("#timetable > table > tbody > tr");
                     for (Element tr_hour : tr_hours) {
                         String hour = tr_hour.id();
@@ -93,15 +110,24 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                         for (Element dl_minute : dl_minutes) {
                             String minute = dl_minute.select("dt").text();
                             String trnCls = dl_minute.select(".trn-cls").text();
+                            if (StringUtil.isBlank(trnCls)) {
+                                trnCls = "無印";
+                            }
+                            trnCls = trnCls.replaceAll("[\\[\\]]", "");
                             String staFor = dl_minute.select(".sta-for").text();
+                            if (StringUtil.isBlank(staFor)) {
+                                staFor = "無印";
+                            }
                             // write time info
                             ContentValues timeValues = new ContentValues();
                             timeValues.put("STATION_ID", id);
                             timeValues.put("LINE_ID", lineId);
                             timeValues.put("DAY_TYPE", kind[j]);
-                            timeValues.put("DEPART_TIME", hour + ":" + minute);
-                            timeValues.put("TRAIN_CLASS", trnCls);
-                            timeValues.put("STATION_FOR", staFor);
+                            timeValues.put("DEPART_TIME", String.format("%02d:%02d", Integer.parseInt(hour), Integer.parseInt(minute.replace("◆", ""))));
+                            timeValues.put("TRAIN_CLASS", trainClassMap.get(trnCls));
+                            timeValues.put("STATION_FOR", stationForMap.get(staFor));
+                            timeValues.put("SPECIAL", minute.indexOf("◆")>=0?"◆":"");
+                            
                             db.insert("STATIONTIME", null, timeValues);
                         }
                     }

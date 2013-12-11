@@ -3,6 +3,7 @@
 
     <string name="app_name">電車時刻表</string>
     <string name="action_newTimer">新規</string>
+    <string name="action_deleteTimer">削除</string>
     <string name="action_settings">設定</string>
     <string name="title_activity_new_timer">駅検索</string>
     <string name="stationName">駅名</string>
@@ -14,6 +15,8 @@
     <string name="confirm">完了</string>
     <string name="network_busy">しばらくお待ちください</string>
     <string name="progress_dialog_title">データ取得</string>
+    <string name="delete_progress_dialog_title">削除中</string>
     <string name="progress_dialog_message">%1$s駅のスケジュール取得中</string>
+    <string name="delete_progress_dialog_message">スケジュール削除中</string>
 
 </resources>
