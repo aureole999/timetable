@@ -2,6 +2,7 @@ package com.aureole.timetable;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -52,6 +53,18 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         return pendingIntent;
     }
+    
+    private String getDayType(Calendar cal) {
+        if (Holiday.queryHoliday(cal.getTime()) != null) {
+            return "4";
+        } else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+            return "4";
+        } else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+            return "2";
+        } else {
+            return "1";
+        }
+    }
 
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         final int N = appWidgetIds.length;
@@ -69,15 +82,17 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             DBHelper dbHelper = new DBHelper(context);
             SQLiteDatabase readableDatabase = dbHelper.getReadableDatabase();
             Calendar today = Calendar.getInstance();
-            String yestodayType = "1";
-            String todayTime = String.format("%02d:%02d", today.get(Calendar.HOUR_OF_DAY) + 24, today.get(Calendar.MINUTE));
+            Calendar yestoday = Calendar.getInstance();
+            yestoday.add(Calendar.DATE, -1);
+            String yestodayType = getDayType(yestoday);
+            String todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY) + 24, today.get(Calendar.MINUTE));
             Cursor query = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {id.toString(), yestodayType, todayTime},null,null,null);
             String nextTime = "";
             int count = query.getCount();
             if (count == 0) {
                 query.close();
-                String todayType = "1";
-                todayTime = String.format("%02d:%02d", today.get(Calendar.HOUR_OF_DAY), today.get(Calendar.MINUTE));
+                String todayType = getDayType(today);
+                todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY), today.get(Calendar.MINUTE));
                 Cursor query2 = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {id.toString(), todayType, todayTime},null,null,null);
                 if (query2.getCount() == 0) {
                     query2.close();
