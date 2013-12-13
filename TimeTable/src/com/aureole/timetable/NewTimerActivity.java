@@ -101,8 +101,8 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
 	                    if (matcher.find()) {
                             intent.putExtra("StationId", matcher.group(1));
                             intent.putExtra("StationName", stationSelect.select(".staName h1").text());
+                            startActivityForResult(intent, 1);
 	                    }
-	                    startActivityForResult(intent, 1); 
 	                }
             	} else {
             		// network error
