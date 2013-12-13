@@ -168,6 +168,7 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
             appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
         }
         progress.dismiss();
+        act.setResult(Activity.RESULT_OK);
         act.finish();
         super.onPostExecute(result);
     }

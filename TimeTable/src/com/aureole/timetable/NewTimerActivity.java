@@ -83,7 +83,7 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
 	                adapter.clear();
 	                stationIdList.clear();
 	                
-	                if (stations != null) {
+	                if (stations != null && stations.size() > 0) {
 	                    Pattern pattern = Pattern.compile("^\\/station\\/rail\\/(\\d+)\\/.*");
 	                    for (Element s : stations) {
 	                        Matcher matcher = pattern.matcher(s.attr("href"));
@@ -93,6 +93,16 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
 	                        }
 	                    }
 	                    adapter.notifyDataSetChanged();
+	                } else {
+	                    Intent intent = new Intent(aq.getContext(), StationDetailActivity.class);
+	                    
+	                    Pattern pattern = Pattern.compile("/station/top/(\\d+)/");
+	                    Matcher matcher = pattern.matcher(stationSelect.select("#station-nav .tab01 a").attr("href"));
+	                    if (matcher.find()) {
+                            intent.putExtra("StationId", matcher.group(1));
+                            intent.putExtra("StationName", stationSelect.select(".staName h1").text());
+	                    }
+	                    startActivityForResult(intent, 1); 
 	                }
             	} else {
             		// network error
@@ -117,7 +127,9 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        this.finish();
+        if (resultCode == Activity.RESULT_OK) {
+            this.finish();
+        }
     }
 
 }
