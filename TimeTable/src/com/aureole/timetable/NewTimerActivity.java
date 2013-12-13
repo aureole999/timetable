@@ -110,8 +110,14 @@ public class NewTimerActivity extends Activity implements OnQueryTextListener , 
         Intent intent = new Intent(this, StationDetailActivity.class);
         intent.putExtra("StationId", stationIdList.get(index));
         intent.putExtra("StationName", ((TextView)view).getText());
-        startActivity(intent);
+        startActivityForResult(intent, 1);
         
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        this.finish();
     }
 
 }

@@ -11,10 +11,13 @@ import org.jsoup.select.Elements;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Bundle;
 
 import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
@@ -50,6 +53,13 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
         progress.setMax(100);
         progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progress.show();
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
+        for (int i = 0; i < appWidgetIds.length; i++) {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
+            appWidgetOptions.putBoolean("disable", true);
+            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
+        }
         super.onPreExecute();
     }
     @Override
@@ -136,7 +146,6 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                 }
             }
             db.setTransactionSuccessful();
-            progress.dismiss();
             return 0;
         } finally {
             db.endTransaction();
@@ -147,6 +156,20 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     @Override
     protected void onProgressUpdate(Integer... values) {
         progress.setProgress(values[0]);
+    }
+    
+    @Override
+    protected void onPostExecute(Integer result) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
+        for (int i = 0; i < appWidgetIds.length; i++) {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
+            appWidgetOptions.putBoolean("disable", false);
+            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
+        }
+        progress.dismiss();
+        act.finish();
+        super.onPostExecute(result);
     }
 
 }

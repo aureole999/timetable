@@ -2,11 +2,14 @@ package com.aureole.timetable;
 
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
+import android.appwidget.AppWidgetManager;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Bundle;
 
 import com.androidquery.AQuery;
 
@@ -35,6 +38,13 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
         progress.setMax(100);
         progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progress.show();
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
+        for (int i = 0; i < appWidgetIds.length; i++) {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
+            appWidgetOptions.putBoolean("disable", true);
+            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
+        }
         super.onPreExecute();
     }
     @Override
@@ -72,6 +82,13 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
     @SuppressWarnings("unchecked")
     @Override
     protected void onPostExecute(Integer result) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
+        for (int i = 0; i < appWidgetIds.length; i++) {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
+            appWidgetOptions.putBoolean("disable", false);
+            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
+        }
         act.getLoaderManager().restartLoader(0, null, (LoaderCallbacks<Cursor>) act);
         aq.id(R.id.myStationListView).getListView().invalidateViews();
     }

@@ -79,6 +79,10 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             
             Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetId);
             Long id = appWidgetOptions.getLong("1");
+            boolean disabledDB = appWidgetOptions.getBoolean("disable", false);
+            if (disabledDB) {
+                continue;
+            }
             DBHelper dbHelper = new DBHelper(context);
             SQLiteDatabase readableDatabase = dbHelper.getReadableDatabase();
             Calendar today = Calendar.getInstance();

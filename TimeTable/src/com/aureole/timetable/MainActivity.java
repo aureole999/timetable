@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.app.Activity;
 import android.app.LoaderManager;
+import android.app.LoaderManager.LoaderCallbacks;
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
 import android.content.Loader;
@@ -64,9 +65,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+        // 駅検索画面に遷移
         case R.id.action_newTimer:
             Intent intent = new Intent(this, NewTimerActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, 1);
             break;
 
         default:
@@ -175,5 +177,13 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             setResult(RESULT_OK, resultValue);
             finish();
         }
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // refresh view from db
+        this.getLoaderManager().restartLoader(0, null, (LoaderCallbacks<Cursor>) this);
+        aq.id(R.id.myStationListView).getListView().invalidateViews();
     }
 }
