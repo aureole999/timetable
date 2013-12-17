@@ -170,7 +170,7 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.main_widget);
             appWidgetManager.updateAppWidget(mAppWidgetId, views);
             Bundle b = new Bundle();
-            b.putLong("1", arg3);
+            b.putLong("id", arg3);
             appWidgetManager.updateAppWidgetOptions(mAppWidgetId, b);
             Intent resultValue = new Intent();
             resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);

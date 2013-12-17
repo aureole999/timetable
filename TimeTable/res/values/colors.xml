@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="second_grey">#ffeeeeee</color>
-    <color name="card_shadow">#8c666666</color>
-    <color name="card_white">#ffffffff</color>
+    <color name="card_shadow">#22666666</color>
+    <color name="card_white">#8cffffff</color>
+    <color name="widget_background">#8cffffff</color>
+    <color name="widget_background_shadow">#22666666</color>
     <color name="card_selected">#dd33b5e5</color>
 </resources>
