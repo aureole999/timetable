@@ -143,7 +143,8 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             
             long diff = (times[0] - nowTimeInMs) / 1000;
             String counter = String.format(Locale.JAPAN, "%02d:%02d", diff / 60, diff % 60);
-            views.setTextViewText(R.id.widget_station_name, counter);
+            views.setTextViewText(R.id.widget_station_name, appWidgetOptions.getString("name", ""));
+            views.setTextViewText(R.id.widget_timer, counter);
             // Tell the AppWidgetManager to perform an update on the current app widget
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }

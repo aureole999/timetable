@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.appwidget.AppWidgetManager;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.DialogInterface.OnClickListener;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -22,6 +26,7 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.RemoteViews;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 
 import com.androidquery.AQuery;
 import com.commonsware.cwac.loaderex.SQLiteCursorLoader;
@@ -165,17 +170,50 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             arg1.setActivated(!arg1.isActivated());
         }
         
+        // add widget setting
         if (mAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            
+            // set filter
+            SQLiteDatabase readableDatabase = db.getReadableDatabase();
+            Cursor curStationFor = readableDatabase.rawQuery("SELECT DISTINCT * FROM (SELECT 0 AS _id, 1 AS CHECK_FLAG, STATION_FOR AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ?  UNION ALL SELECT 1 AS _id, 1 AS CHECK_FLAG, TRAIN_CLASS AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ? ) FLT", new String[]{Long.toString(arg3), Long.toString(arg3)});
+            AlertDialog.Builder builder = new AlertDialog.Builder(aq.getContext());
+            
+            // 
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
             RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.main_widget);
+            Bundle widgetOption = new Bundle();
+            widgetOption.putLong("id", arg3);
+            widgetOption.putString("name", ((TextView)arg1).getText().toString());
+            appWidgetManager.updateAppWidgetOptions(mAppWidgetId, widgetOption);
             appWidgetManager.updateAppWidget(mAppWidgetId, views);
-            Bundle b = new Bundle();
-            b.putLong("id", arg3);
-            appWidgetManager.updateAppWidgetOptions(mAppWidgetId, b);
-            Intent resultValue = new Intent();
-            resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
-            setResult(RESULT_OK, resultValue);
-            finish();
+            
+            builder.setTitle("フィルター").setMultiChoiceItems(curStationFor, "CHECK_FLAG", "FILTER_NAME", null);
+            
+            
+            builder.setPositiveButton("ok", new OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Intent resultValue = new Intent();
+                    resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
+                    setResult(RESULT_OK, resultValue);
+                    finish();
+                }
+            });
+            builder.setNegativeButton("cancel", new OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            
+            
+            
+            
+
+
         }
     }
     
