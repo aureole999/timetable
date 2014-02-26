@@ -15,6 +15,9 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Holo.Light" >
+        
+        <provider android:name="TimetableProvider" android:authorities="com.aureole.timetableProvider" android:exported="false"/>
+        
         <activity
             android:name="com.aureole.timetable.MainActivity"
             android:label="@string/app_name" >

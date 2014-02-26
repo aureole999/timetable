@@ -8,11 +8,14 @@ import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
+import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
@@ -37,7 +40,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
         calendar.add(Calendar.SECOND, 1);
-        alarmManager.setRepeating(AlarmManager.RTC, calendar.getTimeInMillis(), 1000, createClockTickIntent(context));
+        alarmManager.setRepeating(AlarmManager.RTC, calendar.getTimeInMillis(), 10000, createClockTickIntent(context));
     }
     
     @Override
@@ -73,13 +76,15 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
 
             // Create an Intent to launch ExampleActivity
 
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main_widget);
-            
-            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetId);
-            Long id = appWidgetOptions.getLong("id");
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            String widgetKey = "widget-" + appWidgetId + "-";
+            long id = prefs.getLong(widgetKey + "id", 0);
+            if (id == 0) {
+                continue;
+            }
             long[] times = new long[3];
             for (int j = 0; j < times.length; j++) {
-                times[j] = appWidgetOptions.getLong("time" + j, 0);
+                times[j] = prefs.getLong(widgetKey + "time" + j, 0);
             }
             
             Calendar today = Calendar.getInstance();
@@ -88,24 +93,27 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             // get next trains time
             if (nowTimeInMs >= times[0]) {
             
-                boolean disabledDB = appWidgetOptions.getBoolean("disable", false);
-                if (disabledDB) {
-                    continue;
-                }
-                DBHelper dbHelper = new DBHelper(context);
-                SQLiteDatabase readableDatabase = dbHelper.getReadableDatabase();
                 Calendar yestoday = Calendar.getInstance();
                 yestoday.add(Calendar.DATE, -1);
                 String yestodayType = getDayType(yestoday);
                 String todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY) + 24, today.get(Calendar.MINUTE));
-                Cursor query = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {id.toString(), yestodayType, todayTime},null,null,null);
+                
+                ContentResolver contentResolver = context.getContentResolver();
+                Cursor query = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime}, null);
+                if (query == null) {
+                    continue;
+                }
+                //Cursor query = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime},null,null,null);
+                
                 String nextTime = "";
                 int count = query.getCount();
                 if (count == 0) {
                     query.close();
                     String todayType = getDayType(today);
                     todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY), today.get(Calendar.MINUTE));
-                    Cursor query2 = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {id.toString(), todayType, todayTime},null,null,null);
+                    
+                    Cursor query2 = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime}, null);
+                    // Cursor query2 = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime},null,null,null);
                     if (query2.getCount() == 0) {
                         query2.close();
                     } else {
@@ -134,16 +142,18 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
                     }
                     query.close();
                 }
-                readableDatabase.close();
+                Editor editor = prefs.edit();
                 for (int j = 0; j < times.length; j++) {
-                    appWidgetOptions.putLong("time" + j, times[j]);
+                    editor.putLong(widgetKey + j, times[j]);
                 }
-                appWidgetManager.updateAppWidgetOptions(appWidgetId, appWidgetOptions);
+                editor.commit();
             }
             
             long diff = (times[0] - nowTimeInMs) / 1000;
             String counter = String.format(Locale.JAPAN, "%02d:%02d", diff / 60, diff % 60);
-            views.setTextViewText(R.id.widget_station_name, appWidgetOptions.getString("name", ""));
+            
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main_widget);
+            views.setTextViewText(R.id.widget_station_name, prefs.getString(widgetKey + "name", ""));
             views.setTextViewText(R.id.widget_timer, counter);
             // Tell the AppWidgetManager to perform an update on the current app widget
             appWidgetManager.updateAppWidget(appWidgetId, views);

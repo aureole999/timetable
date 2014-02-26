@@ -12,9 +12,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.content.DialogInterface.OnClickListener;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -181,10 +184,14 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             // 
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
             RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.main_widget);
-            Bundle widgetOption = new Bundle();
-            widgetOption.putLong("id", arg3);
-            widgetOption.putString("name", ((TextView)arg1).getText().toString());
-            appWidgetManager.updateAppWidgetOptions(mAppWidgetId, widgetOption);
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            Editor editor = prefs.edit();
+            String widgetKey = "widget-" + mAppWidgetId + "-";
+            editor.putLong(widgetKey + "id", arg3);
+            editor.putString(widgetKey + "name", ((TextView)arg1).getText().toString());
+            editor.commit();
+            
             appWidgetManager.updateAppWidget(mAppWidgetId, views);
             
             builder.setTitle("フィルター").setMultiChoiceItems(curStationFor, "CHECK_FLAG", "FILTER_NAME", null);

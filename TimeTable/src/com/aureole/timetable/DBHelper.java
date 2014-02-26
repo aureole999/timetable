@@ -6,6 +6,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DBHelper extends SQLiteOpenHelper {
 
+    public static String SET_TRANSACTION_SUCCESSFUL = "setTransactionSuccessful";
+    public static String BEGIN_TRANSACTION = "beginTransaction";
+    public static String END_TRANSACTION = "endTransaction";
+    
     public DBHelper(Context context) {
         super(context, "timetabledb", null, 1);
     }

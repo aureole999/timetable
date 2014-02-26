@@ -13,9 +13,11 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
+import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.res.Resources;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -30,15 +32,13 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     private ProgressDialog progress;
     private String stationId;
     private Long id;
-    private DBHelper dbhelper;
     
 
-    public GetScheduleTask(Activity act, String stationId, Long id, DBHelper db) {
+    public GetScheduleTask(Activity act, String stationId, Long id) {
         this.act = act;
         this.aq = new AQuery(act);
         this.stationId = stationId;
         this.id = id;
-        this.dbhelper = db;
     }
     
     
@@ -64,24 +64,27 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     }
     @Override
     protected Integer doInBackground(String... params) {
-        if (dbhelper == null) {
+        
+        ContentResolver contentResolver = aq.getContext().getContentResolver();
+        if (contentResolver == null) {
             progress.dismiss();
             return 1;
         }
 
-        SQLiteDatabase db = dbhelper.getWritableDatabase();
-        db.beginTransaction();
         try {
+            
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.BEGIN_TRANSACTION, null, null);
+            
             if (id == null) {
                 // write station info
                 ContentValues stationValues = new ContentValues();
                 stationValues.put("YAHOO_ID", stationId);
                 stationValues.put("NAME", act.getTitle().toString());
                 stationValues.put("STATION_NAME", act.getTitle().toString());
-                id = db.insert("STATION", null, stationValues);
+                id = ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/STATION"), stationValues));
             }
-            db.delete("LINE", "STATION_ID = ? ", new String[]{id.toString()});
-            db.delete("STATIONTIME", "STATION_ID = ? ", new String[]{id.toString()});
+            contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/LINE"), "STATION_ID = ? ", new String[]{id.toString()});
+            contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), "STATION_ID = ? ", new String[]{id.toString()});
             
             String url = "http://transit.loco.yahoo.co.jp/station/time/%s/?gid=%s&kind=%s";
             String[] kind = new String[] { "1", "2", "4" };
@@ -92,7 +95,7 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                 ContentValues lineValues = new ContentValues();
                 lineValues.put("STATION_ID", id);
                 lineValues.put("YAHOO_ID", params[i]);
-                Long lineId = db.insert("LINE", null, lineValues);
+                Long lineId = ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/LINE"), lineValues));
                 
                 for (int j = 0; j < kind.length; j++) {
                     AjaxCallback<String> cb = new AjaxCallback<String>();
@@ -138,18 +141,17 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                             timeValues.put("STATION_FOR", stationForMap.get(staFor));
                             timeValues.put("SPECIAL", minute.indexOf("◆")>=0?"◆":"");
                             
-                            db.insert("STATIONTIME", null, timeValues);
+                            ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), timeValues));
                         }
                     }
                     
                     publishProgress((int) (((i * 3 + j + 1) / (float) count) * 100));
                 }
             }
-            db.setTransactionSuccessful();
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.SET_TRANSACTION_SUCCESSFUL, null, null);
             return 0;
         } finally {
-            db.endTransaction();
-            db.close();
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.END_TRANSACTION, null, null);
         }
     }
     
@@ -160,13 +162,6 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     
     @Override
     protected void onPostExecute(Integer result) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
-        for (int i = 0; i < appWidgetIds.length; i++) {
-            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
-            appWidgetOptions.putBoolean("disable", false);
-            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
-        }
         progress.dismiss();
         act.setResult(Activity.RESULT_OK);
         act.finish();

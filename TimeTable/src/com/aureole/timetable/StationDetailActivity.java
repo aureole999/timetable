@@ -40,7 +40,6 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     private List<Map<String, Object>> stationDetailList;
     private int selectedIndex = -1;
     private String stationId;
-    private DBHelper db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +55,6 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
         stationDetailList = new ArrayList<Map<String, Object>>();
         adapter = new SimpleAdapter(this, stationDetailList, android.R.layout.simple_list_item_multiple_choice, new String[] { "line_name_direction" }, new int[] { android.R.id.text1 });
         aq.id(R.id.linesListView).adapter(adapter).itemClicked(this).getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        db = new DBHelper(getApplicationContext());
         getLinesByStation(stationId);
 
     }
@@ -137,7 +135,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                     }
                 }
                 if (lineIdList.size() > 0) {
-                    new GetScheduleTask(this, stationId, null, db).execute(lineIdList.toArray(new String[lineIdList.size()]));
+                    new GetScheduleTask(this, stationId, null).execute(lineIdList.toArray(new String[lineIdList.size()]));
                 } else {
                     // unexpected error
                 }

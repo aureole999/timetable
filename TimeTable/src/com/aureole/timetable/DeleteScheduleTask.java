@@ -2,14 +2,12 @@ package com.aureole.timetable;
 
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
-import android.appwidget.AppWidgetManager;
 import android.app.ProgressDialog;
-import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.res.Resources;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Bundle;
 
 import com.androidquery.AQuery;
 
@@ -18,13 +16,11 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
 
     private Activity act;
     private ProgressDialog progress;
-    private DBHelper dbhelper;
     private AQuery aq;
 
     public DeleteScheduleTask(Activity act, DBHelper db) {
         this.act = act;
         this.aq = new AQuery(act);
-        this.dbhelper = db;
     }
     
     @Override
@@ -38,39 +34,29 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
         progress.setMax(100);
         progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progress.show();
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
-        for (int i = 0; i < appWidgetIds.length; i++) {
-            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
-            appWidgetOptions.putBoolean("disable", true);
-            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
-        }
         super.onPreExecute();
     }
     @Override
     protected Integer doInBackground(String... params) {
-        if (dbhelper == null) {
+        ContentResolver contentResolver = aq.getContext().getContentResolver();
+        if (contentResolver == null) {
             progress.dismiss();
             return 1;
         }
 
-        SQLiteDatabase db = dbhelper.getWritableDatabase();
-        db.beginTransaction();
         try {
-            
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.BEGIN_TRANSACTION, null, null);
             for (int i = 0; i < params.length; i++) {
-                db.delete("STATION", "_id = ? ", new String[]{params[i]});
-                db.delete("LINE", "STATION_ID = ? ", new String[]{params[i]});
-                db.delete("STATIONTIME", "STATION_ID = ? ", new String[]{params[i]});
+                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATION"), "_id = ? ", new String[]{params[i]});
+                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/LINE"), "STATION_ID = ? ", new String[]{params[i]});
+                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), "STATION_ID = ? ", new String[]{params[i]});
                 publishProgress((int) (((i) / (float) params.length) * 100));
             }
-            
-            db.setTransactionSuccessful();
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.SET_TRANSACTION_SUCCESSFUL, null, null);
             progress.dismiss();
             return 0;
         } finally {
-            db.endTransaction();
-            db.close();
+            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.END_TRANSACTION, null, null);
         }
     }
     
@@ -82,13 +68,6 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
     @SuppressWarnings("unchecked")
     @Override
     protected void onPostExecute(Integer result) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
-        for (int i = 0; i < appWidgetIds.length; i++) {
-            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
-            appWidgetOptions.putBoolean("disable", false);
-            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
-        }
         act.getLoaderManager().restartLoader(0, null, (LoaderCallbacks<Cursor>) act);
         aq.id(R.id.myStationListView).getListView().invalidateViews();
     }
