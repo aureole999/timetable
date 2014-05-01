@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.utils;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;

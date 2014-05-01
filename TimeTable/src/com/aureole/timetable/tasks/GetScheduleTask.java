@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.tasks;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +23,10 @@ import android.os.Bundle;
 
 import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
+import com.aureole.timetable.DBHelper;
+import com.aureole.timetable.R;
+import com.aureole.timetable.TimeTableAppWidgetProvider;
+import com.aureole.timetable.R.string;
 
 
 public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {

@@ -1,6 +1,8 @@
 package com.aureole.timetable;
 
+import java.lang.reflect.Array;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 import android.app.AlarmManager;
@@ -8,19 +10,27 @@ import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
-import android.net.Uri;
+import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.aureole.timetable.logics.TimeTableLogic;
+
 public class TimeTableAppWidgetProvider extends AppWidgetProvider {
 
+    private static DBHelper getDatabaseHelper(Context context) {
+        DBHelper dbh = null;
+        if (dbh == null) {
+            dbh = new DBHelper(context);
+        }
+        return dbh;
+    }
+    
     @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
@@ -56,19 +66,8 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
         return pendingIntent;
     }
     
-    private String getDayType(Calendar cal) {
-        if (Holiday.queryHoliday(cal.getTime()) != null) {
-            return "4";
-        } else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
-            return "4";
-        } else if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-            return "2";
-        } else {
-            return "1";
-        }
-    }
-
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+        Debug.startMethodTracing("widget");
         final int N = appWidgetIds.length;
         // Perform this loop procedure for each App Widget that belongs to this provider
         for (int i = 0; i < N; i++) {
@@ -82,74 +81,46 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             if (id == 0) {
                 continue;
             }
-            long[] times = new long[3];
-            for (int j = 0; j < times.length; j++) {
-                times[j] = prefs.getLong(widgetKey + "time" + j, 0);
-            }
-            
+ 
             Calendar today = Calendar.getInstance();
             
             long nowTimeInMs = today.getTimeInMillis();
-            // get next trains time
-            if (nowTimeInMs >= times[0]) {
             
-                Calendar yestoday = Calendar.getInstance();
-                yestoday.add(Calendar.DATE, -1);
-                String yestodayType = getDayType(yestoday);
-                String todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY) + 24, today.get(Calendar.MINUTE));
+            int size = prefs.getInt(widgetKey + "size", 0);
+            long lastTime = prefs.getLong(widgetKey + "lastTime", 0);
+            if (size == 0 || lastTime == 0 || nowTimeInMs > lastTime) {
                 
-                ContentResolver contentResolver = context.getContentResolver();
-                Cursor query = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime}, "DEPART_TIME ASC");
-                if (query == null) {
-                    continue;
-                }
-                //Cursor query = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime},null,null,null);
+                // request new time table
+                Calendar day = (Calendar) today.clone();
+                List<String> timetable = requestTimeTable(context, String.valueOf(id), day);
                 
-                String nextTime = "";
-                int count = query.getCount();
-                if (count == 0) {
-                    query.close();
-                    String todayType = getDayType(today);
-                    todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY), today.get(Calendar.MINUTE));
-                    
-                    Cursor query2 = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime}, "DEPART_TIME ASC");
-                    // Cursor query2 = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime},null,null,null);
-                    if (query2.getCount() == 0) {
-                        query2.close();
-                    } else {
-                        for (int j = 0; j < times.length; j++) {
-                            if (query2.moveToNext()) {
-                                nextTime = query2.getString(0);
-                                today.set(Calendar.HOUR_OF_DAY, Integer.parseInt(nextTime.split(":")[0]));
-                                today.set(Calendar.MINUTE, Integer.parseInt(nextTime.split(":")[1]));
-                                today.set(Calendar.SECOND, 0);
-                                today.set(Calendar.MILLISECOND, 0);
-                                times[j] = today.getTimeInMillis();
-                            }
-                        }
-                        query2.close();
-                    }
-                } else {
-                    for (int j = 0; j < times.length; j++) {
-                        if (query.moveToNext()) {
-                            nextTime = query.getString(0);
-                            today.set(Calendar.HOUR_OF_DAY, Integer.parseInt(nextTime.split(":")[0])-24);
-                            today.set(Calendar.MINUTE, Integer.parseInt(nextTime.split(":")[1]));
-                            today.set(Calendar.SECOND, 0);
-                            today.set(Calendar.MILLISECOND, 0);
-                            times[j] = today.getTimeInMillis();
-                        }
-                    }
-                    query.close();
-                }
+                size = timetable.size();
                 Editor editor = prefs.edit();
-                for (int j = 0; j < times.length; j++) {
-                    editor.putLong(widgetKey + j, times[j]);
+                editor.putInt(widgetKey + "size", size);
+                
+                for (int j = 0; j < size; j++) {
+                    long time = setDay(day, timetable.get(j)).getTimeInMillis();
+                    editor.putLong(widgetKey + j, time);
+                    if (j == size - 1) {
+                        editor.putLong(widgetKey + "lastTime", time);
+                    }
                 }
                 editor.commit();
+
             }
             
-            long diff = (times[0] - nowTimeInMs) / 1000;
+            long[] times = new long[size];
+            
+            int nextTrainIndex = 0;
+            for (int j = 0; j < times.length; j++) {
+                times[j] = prefs.getLong(widgetKey + "time" + j, 0);
+                if (nowTimeInMs > times[j]) {
+                    nextTrainIndex = j + 1;
+                }
+            }
+            
+           
+            long diff = (times[nextTrainIndex] - nowTimeInMs) / 1000;
             String counter = String.format(Locale.JAPAN, "%02d:%02d", diff / 60, diff % 60);
             
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main_widget);
@@ -157,6 +128,31 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.widget_timer, counter);
             // Tell the AppWidgetManager to perform an update on the current app widget
             appWidgetManager.updateAppWidget(appWidgetId, views);
+            
         }
+        Debug.stopMethodTracing();
+    }
+    
+    private List<String> requestTimeTable(Context context, String id, Calendar day) {
+        DBHelper db = getDatabaseHelper(context);
+        TimeTableLogic logic = new TimeTableLogic(db);
+        return logic.getNextTrainTime(String.valueOf(id), day);
+    }
+    
+    private Calendar setDay(Calendar day, String time) {
+        Calendar newDay = (Calendar) day.clone();
+        String[] times = time.split(":");
+        int hour = Integer.parseInt(times[0]);
+        int minute = Integer.parseInt(times[1]);
+        if (hour >= 24) {
+            newDay.add(Calendar.DATE, 1);
+            newDay.set(Calendar.HOUR_OF_DAY, hour-24);
+        } else {
+            newDay.set(Calendar.HOUR_OF_DAY, hour);
+        }
+        newDay.set(Calendar.MINUTE, minute);
+        newDay.set(Calendar.SECOND, 0);
+        newDay.set(Calendar.MILLISECOND, 0);
+        return newDay;
     }
 }

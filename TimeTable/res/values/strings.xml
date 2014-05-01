@@ -18,5 +18,9 @@
     <string name="delete_progress_dialog_title">削除中</string>
     <string name="progress_dialog_message">%1$s駅のスケジュール取得中</string>
     <string name="delete_progress_dialog_message">スケジュール削除中</string>
+    <string name="title_activity_detail_time">DetailTimeActivity</string>
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
 
 </resources>

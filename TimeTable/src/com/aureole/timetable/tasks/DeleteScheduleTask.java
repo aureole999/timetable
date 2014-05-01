@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.tasks;
 
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
@@ -10,6 +10,10 @@ import android.net.Uri;
 import android.os.AsyncTask;
 
 import com.androidquery.AQuery;
+import com.aureole.timetable.DBHelper;
+import com.aureole.timetable.R;
+import com.aureole.timetable.R.id;
+import com.aureole.timetable.R.string;
 
 
 public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {

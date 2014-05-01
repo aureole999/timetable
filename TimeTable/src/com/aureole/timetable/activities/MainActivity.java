@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.activities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,9 +9,9 @@ import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.appwidget.AppWidgetManager;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.Loader;
-import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
@@ -32,6 +32,9 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import com.androidquery.AQuery;
+import com.aureole.timetable.DBHelper;
+import com.aureole.timetable.R;
+import com.aureole.timetable.tasks.DeleteScheduleTask;
 import com.commonsware.cwac.loaderex.SQLiteCursorLoader;
 
 public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, OnItemClickListener, OnItemLongClickListener {
@@ -86,7 +89,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         return super.onOptionsItemSelected(item);
     }
 
-
     @Override
     public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) {
         switch (loaderId) {
@@ -97,12 +99,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
         }
     }
 
-
     @Override
     public void onLoadFinished(Loader<Cursor> arg0, Cursor cursor) {
         adapter.changeCursor(cursor);
     }
-
 
     @Override
     public void onLoaderReset(Loader<Cursor> arg0) {

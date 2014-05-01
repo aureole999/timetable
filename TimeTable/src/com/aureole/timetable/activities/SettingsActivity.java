@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.activities;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -18,6 +18,10 @@ import android.preference.RingtonePreference;
 import android.text.TextUtils;
 
 import java.util.List;
+
+import com.aureole.timetable.R;
+import com.aureole.timetable.R.string;
+import com.aureole.timetable.R.xml;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On

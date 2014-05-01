@@ -4,7 +4,7 @@
     android:updatePeriodMillis="0"
     android:previewImage="@drawable/ic_launcher"
     android:initialLayout="@layout/main_widget"
-    android:configure="com.aureole.timetable.MainActivity" 
+    android:configure="com.aureole.timetable.activities.MainActivity" 
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen|keyguard"
     android:initialKeyguardLayout="@layout/main_widget">

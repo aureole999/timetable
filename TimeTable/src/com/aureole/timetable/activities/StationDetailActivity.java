@@ -1,4 +1,4 @@
-package com.aureole.timetable;
+package com.aureole.timetable.activities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +32,8 @@ import android.widget.Toast;
 import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
 import com.androidquery.callback.AjaxStatus;
+import com.aureole.timetable.R;
+import com.aureole.timetable.tasks.GetScheduleTask;
 
 public class StationDetailActivity extends Activity implements OnItemClickListener {
 
