@@ -41,6 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 ", DEPART_TIME TEXT" +
                 ", TRAIN_CLASS TEXT" +
                 ", STATION_FOR TEXT" +
+                ", STARTING_STATION TEXT" +
                 ", SPECIAL TEXT" +
                 " ) ");
     }

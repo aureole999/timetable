@@ -136,9 +136,10 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                             timeValues.put("STATION_ID", id);
                             timeValues.put("LINE_ID", lineId);
                             timeValues.put("DAY_TYPE", kind[j]);
-                            timeValues.put("DEPART_TIME", String.format("%02d:%02d", Integer.parseInt(hour), Integer.parseInt(minute.replace("◆", ""))));
+                            timeValues.put("DEPART_TIME", String.format("%02d:%02d", Integer.parseInt(hour), Integer.parseInt(minute.replaceAll("[\\D]", ""))));
                             timeValues.put("TRAIN_CLASS", trainClassMap.get(trnCls));
                             timeValues.put("STATION_FOR", stationForMap.get(staFor));
+                            timeValues.put("STARTING_STATION", minute.indexOf("●")>=0?"●":"");
                             timeValues.put("SPECIAL", minute.indexOf("◆")>=0?"◆":"");
                             
                             ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), timeValues));

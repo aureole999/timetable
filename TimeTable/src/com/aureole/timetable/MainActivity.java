@@ -215,11 +215,6 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             });
             AlertDialog dialog = builder.create();
             dialog.show();
-            
-            
-            
-            
-
 
         }
     }

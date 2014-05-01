@@ -99,7 +99,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
                 String todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY) + 24, today.get(Calendar.MINUTE));
                 
                 ContentResolver contentResolver = context.getContentResolver();
-                Cursor query = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime}, null);
+                Cursor query = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), yestodayType, todayTime}, "DEPART_TIME ASC");
                 if (query == null) {
                     continue;
                 }
@@ -112,7 +112,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
                     String todayType = getDayType(today);
                     todayTime = String.format(Locale.JAPAN, "%02d:%02d", today.get(Calendar.HOUR_OF_DAY), today.get(Calendar.MINUTE));
                     
-                    Cursor query2 = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime}, null);
+                    Cursor query2 = contentResolver.query(Uri.parse("content://com.aureole.timetableProvider"), new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime}, "DEPART_TIME ASC");
                     // Cursor query2 = readableDatabase.query("STATIONTIME", new String[]{"DEPART_TIME"}, "STATION_ID = ? AND DAY_TYPE = ? AND DEPART_TIME > ?", new String[] {String.valueOf(id), todayType, todayTime},null,null,null);
                     if (query2.getCount() == 0) {
                         query2.close();
