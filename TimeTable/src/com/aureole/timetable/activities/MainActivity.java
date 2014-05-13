@@ -178,9 +178,10 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             
             // set filter
             SQLiteDatabase readableDatabase = db.getReadableDatabase();
-            Cursor curStationFor = readableDatabase.rawQuery("SELECT DISTINCT * FROM (SELECT 0 AS _id, 1 AS CHECK_FLAG, STATION_FOR AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ?  UNION ALL SELECT 1 AS _id, 1 AS CHECK_FLAG, TRAIN_CLASS AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ? ) FLT", new String[]{Long.toString(arg3), Long.toString(arg3)});
+            Cursor curStationFor = readableDatabase.rawQuery("SELECT DISTINCT * FROM (SELECT 0 AS _id, 1 AS CHECK_FLAG, STATION_FOR AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ? ) FLT", new String[]{Long.toString(arg3)});
+            Cursor curTrainClass = readableDatabase.rawQuery("SELECT DISTINCT * FROM (SELECT 1 AS _id, 1 AS CHECK_FLAG, TRAIN_CLASS AS FILTER_NAME FROM STATIONTIME WHERE STATION_ID = ? ) FLT", new String[]{Long.toString(arg3)});
             AlertDialog.Builder builder = new AlertDialog.Builder(aq.getContext());
-            
+            builder.setCancelable(false);
             // 
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
             RemoteViews views = new RemoteViews(this.getPackageName(), R.layout.main_widget);
@@ -194,27 +195,47 @@ public class MainActivity extends Activity implements LoaderManager.LoaderCallba
             
             appWidgetManager.updateAppWidget(mAppWidgetId, views);
             
-            builder.setTitle("フィルター").setMultiChoiceItems(curStationFor, "CHECK_FLAG", "FILTER_NAME", null);
+            if (curStationFor.getCount() < 2 && curTrainClass.getCount() < 2) {
+                Intent resultValue = new Intent();
+                resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
+                setResult(RESULT_OK, resultValue);
+                finish();
+            }
             
-            
-            builder.setPositiveButton("ok", new OnClickListener() {
+            if (curStationFor.getCount() >= 2) {
+                builder.setTitle("行先フィルター").setMultiChoiceItems(curStationFor, "CHECK_FLAG", "FILTER_NAME", null);
                 
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    Intent resultValue = new Intent();
-                    resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
-                    setResult(RESULT_OK, resultValue);
-                    finish();
-                }
-            });
-            builder.setNegativeButton("cancel", new OnClickListener() {
+                builder.setPositiveButton("適用", new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        
+                    }
+                });
+                builder.setNegativeButton("キャンセル", new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
+            if (curTrainClass.getCount() > 2) {
+                builder.setTitle("種類フィルター").setMultiChoiceItems(curTrainClass, "CHECK_FLAG", "FILTER_NAME", null);
                 
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                }
-            });
-            AlertDialog dialog = builder.create();
-            dialog.show();
+                builder.setPositiveButton("適用", new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        
+                    }
+                });
+                builder.setNegativeButton("キャンセル", new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+                AlertDialog dialog = builder.create();
+                dialog.show();
+            }
 
         }
     }

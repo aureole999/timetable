@@ -32,9 +32,6 @@ import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
 import com.androidquery.callback.AjaxStatus;
 import com.aureole.timetable.R;
-import com.aureole.timetable.R.id;
-import com.aureole.timetable.R.layout;
-import com.aureole.timetable.R.menu;
 
 public class NewTimerActivity extends Activity implements OnQueryTextListener , OnItemClickListener{
 

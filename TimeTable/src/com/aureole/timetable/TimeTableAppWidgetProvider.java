@@ -1,6 +1,5 @@
 package com.aureole.timetable;
 
-import java.lang.reflect.Array;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -14,7 +13,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -50,7 +48,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(System.currentTimeMillis());
         calendar.add(Calendar.SECOND, 1);
-        alarmManager.setRepeating(AlarmManager.RTC, calendar.getTimeInMillis(), 10000, createClockTickIntent(context));
+        alarmManager.setRepeating(AlarmManager.RTC, calendar.getTimeInMillis(), 1000, createClockTickIntent(context));
     }
     
     @Override
@@ -67,7 +65,6 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
     }
     
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        Debug.startMethodTracing("widget");
         final int N = appWidgetIds.length;
         // Perform this loop procedure for each App Widget that belongs to this provider
         for (int i = 0; i < N; i++) {
@@ -88,7 +85,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
             
             int size = prefs.getInt(widgetKey + "size", 0);
             long lastTime = prefs.getLong(widgetKey + "lastTime", 0);
-            if (size == 0 || lastTime == 0 || nowTimeInMs > lastTime) {
+            //if (size == 0 || lastTime == 0 || nowTimeInMs > lastTime) {
                 
                 // request new time table
                 Calendar day = (Calendar) today.clone();
@@ -100,14 +97,14 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
                 
                 for (int j = 0; j < size; j++) {
                     long time = setDay(day, timetable.get(j)).getTimeInMillis();
-                    editor.putLong(widgetKey + j, time);
+                    editor.putLong(widgetKey + "time" + j, time);
                     if (j == size - 1) {
                         editor.putLong(widgetKey + "lastTime", time);
                     }
                 }
-                editor.commit();
+                editor.apply();
 
-            }
+            //}
             
             long[] times = new long[size];
             
@@ -118,19 +115,22 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
                     nextTrainIndex = j + 1;
                 }
             }
+            String counter = "--";
             
-           
-            long diff = (times[nextTrainIndex] - nowTimeInMs) / 1000;
-            String counter = String.format(Locale.JAPAN, "%02d:%02d", diff / 60, diff % 60);
+            if (nextTrainIndex < times.length) {
             
+                long diff = (times[nextTrainIndex] - nowTimeInMs) / 1000;
+                counter = String.format(Locale.JAPAN, "%02d:%02d", diff / 60, diff % 60);
+            }
+                
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.main_widget);
             views.setTextViewText(R.id.widget_station_name, prefs.getString(widgetKey + "name", ""));
             views.setTextViewText(R.id.widget_timer, counter);
-            // Tell the AppWidgetManager to perform an update on the current app widget
+        
             appWidgetManager.updateAppWidget(appWidgetId, views);
+            // Tell the AppWidgetManager to perform an update on the current app widget
             
         }
-        Debug.stopMethodTracing();
     }
     
     private List<String> requestTimeTable(Context context, String id, Calendar day) {
@@ -153,6 +153,7 @@ public class TimeTableAppWidgetProvider extends AppWidgetProvider {
         newDay.set(Calendar.MINUTE, minute);
         newDay.set(Calendar.SECOND, 0);
         newDay.set(Calendar.MILLISECOND, 0);
+        Log.i("day", String.valueOf(newDay.getTimeInMillis()));
         return newDay;
     }
 }

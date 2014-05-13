@@ -3,17 +3,14 @@ package com.aureole.timetable.tasks;
 import android.app.Activity;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.app.ProgressDialog;
-import android.content.ContentResolver;
 import android.content.res.Resources;
 import android.database.Cursor;
-import android.net.Uri;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 
 import com.androidquery.AQuery;
 import com.aureole.timetable.DBHelper;
 import com.aureole.timetable.R;
-import com.aureole.timetable.R.id;
-import com.aureole.timetable.R.string;
 
 
 public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
@@ -21,10 +18,12 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
     private Activity act;
     private ProgressDialog progress;
     private AQuery aq;
+    private DBHelper dbHelper;
 
     public DeleteScheduleTask(Activity act, DBHelper db) {
         this.act = act;
         this.aq = new AQuery(act);
+        this.dbHelper = db;
     }
     
     @Override
@@ -42,26 +41,27 @@ public class DeleteScheduleTask extends AsyncTask<String, Integer, Integer> {
     }
     @Override
     protected Integer doInBackground(String... params) {
-        ContentResolver contentResolver = aq.getContext().getContentResolver();
-        if (contentResolver == null) {
-            progress.dismiss();
-            return 1;
-        }
 
+        
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransaction();
         try {
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.BEGIN_TRANSACTION, null, null);
+            
             for (int i = 0; i < params.length; i++) {
-                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATION"), "_id = ? ", new String[]{params[i]});
-                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/LINE"), "STATION_ID = ? ", new String[]{params[i]});
-                contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), "STATION_ID = ? ", new String[]{params[i]});
+                db.delete("STATION", "_id = ? ", new String[]{params[i]});
+                db.delete("LINE", "STATION_ID = ? ", new String[]{params[i]});
+                db.delete("STATIONTIME", "STATION_ID = ? ", new String[]{params[i]});
                 publishProgress((int) (((i) / (float) params.length) * 100));
             }
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.SET_TRANSACTION_SUCCESSFUL, null, null);
+            
+            db.setTransactionSuccessful();
             progress.dismiss();
             return 0;
         } finally {
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.END_TRANSACTION, null, null);
+            db.endTransaction();
+            db.close();
         }
+        
     }
     
     @Override

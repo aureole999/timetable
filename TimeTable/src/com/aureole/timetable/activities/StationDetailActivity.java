@@ -32,6 +32,7 @@ import android.widget.Toast;
 import com.androidquery.AQuery;
 import com.androidquery.callback.AjaxCallback;
 import com.androidquery.callback.AjaxStatus;
+import com.aureole.timetable.DBHelper;
 import com.aureole.timetable.R;
 import com.aureole.timetable.tasks.GetScheduleTask;
 
@@ -42,6 +43,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
     private List<Map<String, Object>> stationDetailList;
     private int selectedIndex = -1;
     private String stationId;
+    private DBHelper db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +60,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
         adapter = new SimpleAdapter(this, stationDetailList, android.R.layout.simple_list_item_multiple_choice, new String[] { "line_name_direction" }, new int[] { android.R.id.text1 });
         aq.id(R.id.linesListView).adapter(adapter).itemClicked(this).getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         getLinesByStation(stationId);
-
+        db = new DBHelper(getApplicationContext());
     }
 
     private void getLinesByStation(String stationId) {
@@ -137,7 +139,7 @@ public class StationDetailActivity extends Activity implements OnItemClickListen
                     }
                 }
                 if (lineIdList.size() > 0) {
-                    new GetScheduleTask(this, stationId, null).execute(lineIdList.toArray(new String[lineIdList.size()]));
+                    new GetScheduleTask(this, stationId, null, db).execute(lineIdList.toArray(new String[lineIdList.size()]));
                 } else {
                     // unexpected error
                 }

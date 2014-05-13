@@ -21,6 +21,7 @@ public class TimeTableLogic {
         return String.format(Locale.JAPAN, "%02d:%02d", day.get(Calendar.HOUR_OF_DAY) + (plus24 ? 24 : 0), day.get(Calendar.MINUTE));
     }
     
+    @SuppressWarnings("unused")
     private String formatToHourMinute(Calendar day) {
         return formatToHourMinute(day, false);
     }

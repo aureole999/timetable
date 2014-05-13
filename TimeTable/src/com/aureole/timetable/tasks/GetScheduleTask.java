@@ -13,11 +13,9 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.res.Resources;
-import android.net.Uri;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -26,7 +24,6 @@ import com.androidquery.callback.AjaxCallback;
 import com.aureole.timetable.DBHelper;
 import com.aureole.timetable.R;
 import com.aureole.timetable.TimeTableAppWidgetProvider;
-import com.aureole.timetable.R.string;
 
 
 public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
@@ -36,13 +33,15 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     private ProgressDialog progress;
     private String stationId;
     private Long id;
+    private DBHelper dbHelper;
     
 
-    public GetScheduleTask(Activity act, String stationId, Long id) {
+    public GetScheduleTask(Activity act, String stationId, Long id, DBHelper db) {
         this.act = act;
         this.aq = new AQuery(act);
         this.stationId = stationId;
         this.id = id;
+        this.dbHelper = db;
     }
     
     
@@ -68,27 +67,24 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     }
     @Override
     protected Integer doInBackground(String... params) {
-        
-        ContentResolver contentResolver = aq.getContext().getContentResolver();
-        if (contentResolver == null) {
+        if (dbHelper == null) {
             progress.dismiss();
             return 1;
         }
 
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.beginTransactionNonExclusive();
         try {
-            
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.BEGIN_TRANSACTION, null, null);
-            
             if (id == null) {
                 // write station info
                 ContentValues stationValues = new ContentValues();
                 stationValues.put("YAHOO_ID", stationId);
                 stationValues.put("NAME", act.getTitle().toString());
                 stationValues.put("STATION_NAME", act.getTitle().toString());
-                id = ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/STATION"), stationValues));
+                id = db.insert("STATION", null, stationValues);
             }
-            contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/LINE"), "STATION_ID = ? ", new String[]{id.toString()});
-            contentResolver.delete(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), "STATION_ID = ? ", new String[]{id.toString()});
+            db.delete("LINE", "STATION_ID = ? ", new String[]{id.toString()});
+            db.delete("STATIONTIME", "STATION_ID = ? ", new String[]{id.toString()});
             
             String url = "http://transit.loco.yahoo.co.jp/station/time/%s/?gid=%s&kind=%s";
             String[] kind = new String[] { "1", "2", "4" };
@@ -99,7 +95,7 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                 ContentValues lineValues = new ContentValues();
                 lineValues.put("STATION_ID", id);
                 lineValues.put("YAHOO_ID", params[i]);
-                Long lineId = ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/LINE"), lineValues));
+                Long lineId = db.insert("LINE", null, lineValues);
                 
                 for (int j = 0; j < kind.length; j++) {
                     AjaxCallback<String> cb = new AjaxCallback<String>();
@@ -143,20 +139,21 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
                             timeValues.put("DEPART_TIME", String.format("%02d:%02d", Integer.parseInt(hour), Integer.parseInt(minute.replaceAll("[\\D]", ""))));
                             timeValues.put("TRAIN_CLASS", trainClassMap.get(trnCls));
                             timeValues.put("STATION_FOR", stationForMap.get(staFor));
-                            timeValues.put("STARTING_STATION", minute.indexOf("●")>=0?"●":"");
                             timeValues.put("SPECIAL", minute.indexOf("◆")>=0?"◆":"");
+                            timeValues.put("STARTING_STATION", minute.indexOf("●")>=0?"●":"");
                             
-                            ContentUris.parseId(contentResolver.insert(Uri.parse("content://com.aureole.timetableProvider/STATIONTIME"), timeValues));
+                            db.insert("STATIONTIME", null, timeValues);
                         }
                     }
                     
                     publishProgress((int) (((i * 3 + j + 1) / (float) count) * 100));
                 }
             }
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.SET_TRANSACTION_SUCCESSFUL, null, null);
+            db.setTransactionSuccessful();
             return 0;
         } finally {
-            contentResolver.call(Uri.parse("content://com.aureole.timetableProvider"), DBHelper.END_TRANSACTION, null, null);
+            db.endTransaction();
+            db.close();
         }
     }
     
@@ -167,6 +164,13 @@ public class GetScheduleTask extends AsyncTask<String, Integer, Integer> {
     
     @Override
     protected void onPostExecute(Integer result) {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(act);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(TimeTableAppWidgetProvider.class.getPackage().getName(), TimeTableAppWidgetProvider.class.getName()));
+        for (int i = 0; i < appWidgetIds.length; i++) {
+            Bundle appWidgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetIds[i]);
+            appWidgetOptions.putBoolean("disable", false);
+            appWidgetManager.updateAppWidgetOptions(appWidgetIds[i], appWidgetOptions);
+        }
         progress.dismiss();
         act.setResult(Activity.RESULT_OK);
         act.finish();
